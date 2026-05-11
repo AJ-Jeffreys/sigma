@@ -1,0 +1,47 @@
+title: PowerShell Reflective DLL Loading with Process Hollowing Indicators
+id: 97e7c920-6d71-45da-a47e-88b2edb706e5
+status: experimental
+description: Detects PowerShell scripts that combine reflective DLL loading techniques with process hollowing indicators, commonly used by advanced malware families like Cobalt Strike beacons and similar post-exploitation frameworks to inject code into legitimate processes.
+references:
+    - https://attack.mitre.org/techniques/T1059/001/
+    - https://www.elastic.co/guide/en/security/current/powershell-reflective-assembly-loading-via-system-reflection-assembly-load.html
+    - https://redcanary.com/blog/cobalt-strike-powershell/
+author: AJ Jeffreys
+date: 2026/05/11
+tags:
+    - attack.execution
+    - attack.t1059.001
+    - attack.defense_evasion
+    - attack.t1055
+logsource:
+    product: windows
+    category: ps_script
+    definition: Script Block Logging must be enabled
+detection:
+    selection_reflection:
+        ScriptBlockText|contains|all:
+            - 'System.Reflection.Assembly'
+            - 'Load('
+            - 'GetType('
+    selection_hollowing:
+        ScriptBlockText|contains|all:
+            - 'VirtualAllocEx'
+            - 'WriteProcessMemory'
+            - 'CreateRemoteThread'
+    selection_process_creation:
+        ScriptBlockText|contains:
+            - 'Start-Process'
+            - 'New-Object System.Diagnostics.Process'
+    selection_stealth:
+        ScriptBlockText|contains:
+            - 'WindowStyle'
+            - 'Hidden'
+    condition: selection_reflection and selection_hollowing and selection_process_creation and selection_stealth
+falsepositives:
+    - Advanced legitimate administration tools that use reflective loading for process injection
+    - Security testing frameworks like Empire or Metasploit modules in authorized penetration testing
+    - Custom enterprise deployment scripts that use process hollowing for software installation
+level: high
+related:
+    - id: 6c6c6282-7671-4fe9-a0ce-a2dcebdc342b
+      type: similar
