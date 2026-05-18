@@ -1,0 +1,36 @@
+title: UAC Bypass via CMSTP with Malicious INF File
+id: a72afe49-37a0-4b5b-b3af-dd2a29e9ee6c
+status: experimental
+description: Detects UAC bypass technique using cmstp.exe to execute malicious code via a crafted INF file that contains RegisterOCXSection with encoded commands. This multi-stage attack involves creating a malicious INF file and using cmstp.exe's auto-elevation capability to bypass UAC.
+references:
+    - https://attack.mitre.org/techniques/T1548/002/
+    - https://oddvar.moe/2017/08/15/research-on-cmstp-exe/
+    - https://lolbas-project.github.io/lolbas/Binaries/Cmstp/
+author: AJ Jeffreys
+date: 2026/05/18
+tags:
+    - attack.privilege_escalation
+    - attack.defense_evasion
+    - attack.t1548.002
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_cmstp:
+        Image|endswith: '\\cmstp.exe'
+        CommandLine|contains|all:
+            - '/au'
+            - '.inf'
+    selection_parent:
+        ParentCommandLine|contains|all:
+            - 'echo'
+            - 'RegisterOCXSection'
+            - '.inf'
+    condition: selection_cmstp and selection_parent
+falsepositives:
+    - Legitimate system administration using CMSTP for Connection Manager profiles
+    - Software installation packages that use CMSTP for network configuration
+level: high
+related:
+    - id: 7f741dcf-fc22-4759-87b4-9ae8376676a2
+      type: similar
